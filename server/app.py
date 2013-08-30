@@ -111,6 +111,24 @@ def homepage():
     <script type="text/javascript">
         retry = 15;
         have_once = 0;
+        function set_marker(myloc, data) {
+        lastmarker = new google.maps.Marker({
+                            position: myloc,
+                            map: map,
+                            title: "我在這裏"
+                        })
+                        var mylocCircle = {
+                            strokeColor: '#FF0000',
+                            strokeOpacity: 0.8,
+                            strokeWeight: 2,
+                            fillColor: '#FF0000',
+                            fillOpacity: 0.35,
+                            map: map,
+                            center: myloc,
+                            radius: parseFloat(data["accuracy"])
+                        };
+                        lastcircle = new google.maps.Circle(mylocCircle);
+        }
         function check_result() {
             if (retry > 0) {
                 retry = retry - 1;
@@ -119,7 +137,6 @@ def homepage():
                         have_once = 1;
                         $("#map-canvas-mask").unmask();
                         var myloc = new google.maps.LatLng(data["latitude"], data["longtitude"]);
-                        console.log(data);
                         var div4 = parseFloat(data["accuracy"]) * 100;
                         var zoomlevel = 1;
                         var table = {
@@ -148,29 +165,13 @@ def homepage():
                             if (div4 < table[i]) zoomlevel = i;
                             else break;
                         }
-                        var mapOptions = {
-                            center: myloc,
-                            zoom: zoomlevel,
-                            mapTypeId: google.maps.MapTypeId.ROADMAP
-                        };
-                        var map = new google.maps.Map(document.getElementById("map-canvas"),
-                            mapOptions);
-                        new google.maps.Marker({
-                            position: myloc,
-                            map: map,
-                            title: "我在這裏"
-                        })
-                        var mylocCircle = {
-                            strokeColor: '#FF0000',
-                            strokeOpacity: 0.8,
-                            strokeWeight: 2,
-                            fillColor: '#FF0000',
-                            fillOpacity: 0.35,
-                            map: map,
-                            center: myloc,
-                            radius: parseFloat(data["accuracy"])
-                        };
-                        new google.maps.Circle(mylocCircle);
+                        map.panTo(myloc);
+                        map.setZoom(zoomlevel);
+                        if (lastmarker)
+                            lastmarker.setMap(null);
+                        if (lastcircle)
+                            lastcircle.setMap(null);
+                        setTimeout(function() { set_marker(myloc, data); }, 100);
                         setTimeout(send_request, 60000);
                     } else {
                         setTimeout(check_result, 5000);
@@ -186,9 +187,11 @@ def homepage():
         }
         function send_request() {
             if (have_once == 0) {
+                lastmarker = null;
+                lastcircle = null;
                 $("#map-canvas-mask").mask("正在嘗試取得我的位置");
             } else {
-                $("#map-canvas-mask").mask("正在嘗試獲取新位置");
+                //$("#map-canvas-mask").mask("正在嘗試獲取新位置");
             }
             $.get("location_request", function(data) {
                 retry = 12;
@@ -201,7 +204,7 @@ def homepage():
                 zoom: 2,
                 mapTypeId: google.maps.MapTypeId.ROADMAP
             };
-            var map = new google.maps.Map(document.getElementById("map-canvas"),
+            map = new google.maps.Map(document.getElementById("map-canvas"),
                 mapOptions);
             send_request()
         }
