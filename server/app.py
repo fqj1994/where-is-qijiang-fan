@@ -6,7 +6,7 @@ import json
 from gcm import GCM
 from time import time
 from redis import Redis
-from config import GCM_API_KEY, MAPS_BROSWER_API_KEY, UPDATE_PASSWORD, WEB_TITLE, LOCATION_FLOAT_PASSWORD, ACCURATE_LOCATION_PASSWORD, FLASK_SECRET_KEY
+from config import GCM_API_KEY, MAPS_BROSWER_API_KEY, UPDATE_PASSWORD, WEB_TITLE, LOCATION_FLOAT_PASSWORD, ACCURATE_LOCATION_PASSWORD, FLASK_SECRET_KEY, ACCURATE_MODE
 from math import sin, cos, pi
 
 
@@ -70,6 +70,8 @@ def get_location():
     r = kv.get(app.secret_key + "_last_known_location") or "{}"
     if len(r) >= 3:
         j = json.loads(r)
+        if ACCURATE_MODE:
+            return j
         now = time() + LOCATION_FLOAT_PASSWORD
         float_angel = ((now / 10000) % 3600 * 0.1) * pi / 180
         float_distance = 5000 + now % 10000 * 0.5

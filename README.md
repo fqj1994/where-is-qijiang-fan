@@ -35,6 +35,8 @@ ACCURATE_LOCATION_PASSWORD 爲獲取準確位置的密碼，接口在 /get_best_
 
 FLASK_SECRET_KEY 是 Flask 的secret key，同時也是 Redis 的前綴。不要和使用同一 Redis 服務器的其他實例重名。
 
+ACCURATE_MODE 設置爲 True 或者 False，表示不要密碼是否能獲取未偏移的位置。
+
 然後對 app.py 使用 WSGI 服務器 或 Web 服務器即可。
 
 ## 客戶端的配置
