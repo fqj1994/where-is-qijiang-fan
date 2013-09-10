@@ -6,8 +6,9 @@ import json
 from gcm import GCM
 from time import time
 from redis import Redis
-from config import GCM_API_KEY, MAPS_BROSWER_API_KEY, UPDATE_PASSWORD, WEB_TITLE, LOCATION_FLOAT_PASSWORD, ACCURATE_LOCATION_PASSWORD, FLASK_SECRET_KEY, ACCURATE_MODE
-from math import sin, cos, pi
+from config import GCM_API_KEY, MAPS_BROSWER_API_KEY, UPDATE_PASSWORD, WEB_TITLE, LOCATION_FLOAT_PASSWORD, ACCURATE_LOCATION_PASSWORD, FLASK_SECRET_KEY, ACCURATE_MODE, USER_IN_CHINA, CHINA_OFFSET_DATA_FILE
+from math import sin, cos, pi, asin, log, exp, floor
+import struct
 
 
 kv = Redis()
@@ -19,6 +20,49 @@ def jsonify(f):
     def wrapped(*args, **kwargs):
         return Response(json.dumps(f(*args, **kwargs)), mimetype="application/json")
     return wrapped
+
+
+def find_china_offset(lat_check, lon_check):
+    left, right = 0, 9813675;
+    try:
+        f = open(CHINA_OFFSET_DATA_FILE, 'rb')
+    except:
+        return 0, 0
+    if not f:
+        return 0, 0
+    while left <= right:
+        f.seek(floor((left + right) / 2) * 8)
+        c = f.read(8)
+        lon, lat, x, y = struct.unpack('HHHH', c)
+        if lon == lon_check and lat == lat_check:
+            f.close()
+            return y, x
+        elif (lon, lat) < (lon_check, lat_check):
+            left = floor((left + right) / 2) + 1
+        elif (lon, lat) > (lon_check, lat_check):
+            right = floor((left + right) / 2) - 1
+    f.close()
+    return 0, 0
+
+
+
+def map_offset_in_china(lat, lon):
+    global china_offset_data
+    lat, lon = float(lat), float(lon)
+    lat_check = int(lat * 100)
+    lon_check = int(lon * 100)
+    lat_off, lon_off = find_china_offset(lat_check, lon_check)
+    siny = sin(lat * pi / 180.0)
+    y = log((1 + siny) / ( 1 - siny))
+    latpix = (128 << 18) * (1 - y / (2 * pi)) + lat_off
+    y = 2 * pi * (1 - latpix/ (128 << 18))
+    z = exp(y)
+    siny = (z - 1) / (z + 1)
+    new_lat = asin(siny) * 180 / pi
+    lonpix = (lon + 180) * (256 << 18) / 360.0 + lon_off;
+    new_lon = lonpix * 360 / (256 << 18) - 180
+    return (new_lat, new_lon)
+
 
 @app.route("/location_request")
 @jsonify
@@ -60,6 +104,8 @@ def update_location():
 def get_best_location():
     if request.args.get("password") in ACCURATE_LOCATION_PASSWORD:
         r = kv.get(app.secret_key + "_last_known_location") or "{}"
+        if USER_IN_CHINA and CHINA_OFFSET_DATA_FILE:
+            r["latitude"], r["longtitude"] = map_offset_in_china(r["latitude"], r["longtitude"])
         return Response(r, mimetype='application/json')
     else:
         return Response("{}", mimetype='application/json')
@@ -70,6 +116,8 @@ def get_location():
     r = kv.get(app.secret_key + "_last_known_location") or "{}"
     if len(r) >= 3:
         j = json.loads(r)
+        if USER_IN_CHINA and CHINA_OFFSET_DATA_FILE:
+            j["latitude"], j["longtitude"] = map_offset_in_china(j["latitude"], j["longtitude"])
         if ACCURATE_MODE:
             return j
         now = time() + LOCATION_FLOAT_PASSWORD
@@ -100,8 +148,12 @@ def homepage():
     <link href="//jquery-loadmask.googlecode.com/svn/trunk/src/jquery.loadmask.css" rel="stylesheet" type="text/css" />
     <script src="//ajax.googleapis.com/ajax/libs/jquery/1.9.1/jquery.min.js"></script>
     <script src="//jquery-loadmask.googlecode.com/svn/trunk/src/jquery.loadmask.js"></script>
-    <script type="text/javascript" src="https://maps.googleapis.com/maps/api/js?key=""" + MAPS_BROSWER_API_KEY + """&sensor=true"></script>
-    <style>
+"""
+    if USER_IN_CHINA:
+        html += "<script type=\"text/javascript\" src=\"http://ditu.google.cn/maps/api/js?sensor=false&language=cn\"></script>"
+    else:
+        html += """<script type="text/javascript" src="https://maps.googleapis.com/maps/api/js?key=""" + MAPS_BROSWER_API_KEY + """&sensor=true"></script>"""
+    html += """<style>
     html, body, #map-canvas, #map-canvas-mask {
         margin: 0;
         padding: 0;

@@ -25,6 +25,10 @@ https://where.fqj.me/
 
 然後，進行設置，GCM_API_KEY 和 MAPS_BROWSER_KEY 是那兩個 key
 
+USER_IN_CHINA 爲 BOOL 值，表示調用 Google API 還是 Google.cn 的 API
+
+CHINA_OFFSET_DATA_FILE 爲 String 值，表示中國地圖偏移數據 offset.dat
+
 UPDATE_PASSWORD 是更新位置和Registration ID 時需要的 Password
 
 WEB_TITLE 就是你的頁面標題
