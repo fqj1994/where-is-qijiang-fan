@@ -149,7 +149,7 @@ def homepage():
     <script src="//ajax.googleapis.com/ajax/libs/jquery/1.9.1/jquery.min.js"></script>
     <script src="//jquery-loadmask.googlecode.com/svn/trunk/src/jquery.loadmask.js"></script>
 """
-    if USER_IN_CHINA:
+    if USER_IN_CHINA and request.args.get('https') != '1':
         html += "<script type=\"text/javascript\" src=\"http://ditu.google.cn/maps/api/js?sensor=false&language=cn\"></script>"
     else:
         html += """<script type="text/javascript" src="https://maps.googleapis.com/maps/api/js?key=""" + MAPS_BROSWER_API_KEY + """&sensor=true"></script>"""
