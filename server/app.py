@@ -263,7 +263,7 @@ def homepage():
         google.maps.event.addDomListener(window, 'load', initialize);
     </script>
 </head>
-<body>
+<body style="overflow: hidden;">
     <div id="map-canvas-mask">
         <div id="map-canvas"/>
     </div>
