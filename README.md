@@ -1,7 +1,9 @@
 where-is-qijiang-fan
 ====================
 
-The implementation of "Where is Qijiang Fan" ( https://where.fqj.me/ )
+The implementation of "Where is Qijiang Fan"
+
+The service is turned offline for both battery and physical security reasons.
 
 # 這是什麼
 
